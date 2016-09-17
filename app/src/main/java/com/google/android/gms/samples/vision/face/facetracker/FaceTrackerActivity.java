@@ -22,12 +22,15 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -39,8 +42,9 @@ import com.google.android.gms.vision.face.FaceDetector;
 import com.google.android.gms.samples.vision.face.facetracker.ui.camera.CameraSourcePreview;
 import com.google.android.gms.samples.vision.face.facetracker.ui.camera.GraphicOverlay;
 
+import org.opencv.core.Mat;
+
 import java.io.IOException;
-import org.opencv.core.*;
 
 /**
  * Activity for the face tracker app.  This app detects faces with the rear facing camera, and draws
@@ -62,6 +66,11 @@ public final class FaceTrackerActivity extends AppCompatActivity {
     // Activity Methods
     //==============================================================================================
 
+    static{
+        System.loadLibrary("face");
+        System.loadLibrary("opencv_java");
+    }
+
     /**
      * Initializes the UI and initiates the creation of a face detector.
      */
@@ -81,9 +90,16 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         } else {
             requestCameraPermission();
         }
+
+        TextView tv = (TextView) findViewById(R.id.testTextView);
+        tv.setText(NativeClass.getStringFromNative());
+//        NativeClass mNative = new NativeClass();
+//        mNative.
+
+//        Log.e("GAH", "0" + returnTwo(2));
     }
 
-    static{ System.loadLibrary("opencv_java"); }
+//    public native int returnTwo(int t);
 
     /**
      * Handles the requesting of the camera permission.  This includes
@@ -281,10 +297,12 @@ public final class FaceTrackerActivity extends AppCompatActivity {
     private class GraphicFaceTracker extends Tracker<Face> {
         private GraphicOverlay mOverlay;
         private FaceGraphic mFaceGraphic;
+//        private LabelGraphic mLabelGraphic;
 
         GraphicFaceTracker(GraphicOverlay overlay) {
             mOverlay = overlay;
-            mFaceGraphic = new FaceGraphic(overlay);
+            mFaceGraphic = new FaceGraphic(overlay, getApplicationContext());
+//            mLabelGraphic = new LabelGraphic(overlay);
         }
 
         /**
@@ -301,7 +319,9 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         @Override
         public void onUpdate(FaceDetector.Detections<Face> detectionResults, Face face) {
             mOverlay.add(mFaceGraphic);
+//            mOverlay.add(mLabelGraphic);
             mFaceGraphic.updateFace(face);
+//            mLabelGraphic.updateFace(face);
         }
 
         /**
@@ -323,4 +343,16 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             mOverlay.remove(mFaceGraphic);
         }
     }
+
+    //==============================================================================================
+    // Graphic Face Tracker
+    //==============================================================================================
+//    private class PersistentGraphic extends GraphicOverlay.Graphic {
+//
+//
+//        @Override
+//        public void draw(Canvas canvas) {
+//
+//        }
+//    }
 }
