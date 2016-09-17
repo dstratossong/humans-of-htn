@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merger version="3"><dataSet config="main"><source path="/Users/frieda/Documents/Coding/Hack/HTN/FaceTracker/openCVLibrary24131/src/main/jniLibs"/></dataSet><dataSet config="release"><source path="/Users/frieda/Documents/Coding/Hack/HTN/FaceTracker/openCVLibrary24131/src/release/jniLibs"/></dataSet></merger>
