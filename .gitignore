@@ -1,12 +1,8 @@
 .gradle
-/local.properties
-/.idea/workspace.xml
-/.idea/libraries
 .DS_Store
-/build
-/captures
-app/src/main/jniLibs
-app/src/main/jni
+app/src/main/jniLibs/*
+app/src/main/jni/*
 openCVLibrary24131
 .idea
-app
+import-summary.txt
+build
