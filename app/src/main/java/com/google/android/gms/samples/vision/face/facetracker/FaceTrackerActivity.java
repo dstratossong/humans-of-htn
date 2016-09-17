@@ -29,6 +29,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.Volley;
+import com.google.android.Util;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.vision.CameraSource;
@@ -38,6 +41,9 @@ import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
 import com.google.android.gms.samples.vision.face.facetracker.ui.camera.CameraSourcePreview;
 import com.google.android.gms.samples.vision.face.facetracker.ui.camera.GraphicOverlay;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 
@@ -52,6 +58,8 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     private CameraSourcePreview mPreview;
     private GraphicOverlay mGraphicOverlay;
+
+    private RequestQueue queue;
 
     private static final int RC_HANDLE_GMS = 9001;
     // permission request codes need to be < 256
@@ -80,6 +88,8 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         } else {
             requestCameraPermission();
         }
+
+        queue = Volley.newRequestQueue(this);
     }
 
     /**
@@ -122,9 +132,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
     private void createCameraSource() {
 
         Context context = getApplicationContext();
-        FaceDetector detector = new FaceDetector.Builder(context)
-                .setClassificationType(FaceDetector.ALL_CLASSIFICATIONS)
-                .build();
+        FaceDetector detector = new FaceDetector.Builder(context).build();
 
         detector.setProcessor(
                 new MultiProcessor.Builder<>(new GraphicFaceTrackerFactory())
@@ -145,7 +153,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         mCameraSource = new CameraSource.Builder(context, detector)
                 .setRequestedPreviewSize(640, 480)
                 .setFacing(CameraSource.CAMERA_FACING_BACK)
-                .setRequestedFps(30.0f)
+                .setRequestedFps(15.0f)
                 .build();
     }
 
@@ -280,10 +288,12 @@ public final class FaceTrackerActivity extends AppCompatActivity {
     private class GraphicFaceTracker extends Tracker<Face> {
         private GraphicOverlay mOverlay;
         private FaceGraphic mFaceGraphic;
+        private boolean metaFetched;
 
         GraphicFaceTracker(GraphicOverlay overlay) {
-            mOverlay = overlay;
-            mFaceGraphic = new FaceGraphic(overlay);
+            mOverlay     = overlay;
+            mFaceGraphic = null;
+            metaFetched  = false;
         }
 
         /**
@@ -291,7 +301,24 @@ public final class FaceTrackerActivity extends AppCompatActivity {
          */
         @Override
         public void onNewItem(int faceId, Face item) {
+            String imgPath = takePic();
+            String imgStr = Util.encodeImagetoString(imgPath);
+            JSONObject params = new JSONObject();
+
+            try {
+                params.put("image", imgStr);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            Util.fetchMeta(queue, params);
+            mFaceGraphic = new FaceGraphic(mOverlay, null);
             mFaceGraphic.setId(faceId);
+            metaFetched = true;
+        }
+
+        private String takePic() {
+            return "/storage/emulated/0/Download/giphy.gif";
         }
 
         /**
