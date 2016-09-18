@@ -1,8 +1,10 @@
+.gitignore
+FaceTracker.iml
 .gradle
-/local.properties
-/.idea/workspace.xml
-/.idea/libraries
 .DS_Store
-/build
-/captures
-/.idea
+app/src/main/jniLibs/*
+app/src/main/jni/*
+openCVLibrary24131
+.idea
+import-summary.txt
+build

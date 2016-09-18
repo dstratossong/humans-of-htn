@@ -16,6 +16,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
 
 
 public class Util {
@@ -23,7 +24,7 @@ public class Util {
 
     private static final String URL = "http://fabebeb6.ngrok.io/api/match_image";
 
-    public static void fetchMeta(RequestQueue queue, JSONObject params) {
+    public static void fetchMeta(RequestQueue queue, final JSONObject params) {
         try {
             Log.v(TAG, "sending data: (left, top, width, height): "
                     + params.getString("left") + " " + params.getString("top") + " " + params.getString("width") + " " + params.getString("height"));
@@ -36,6 +37,13 @@ public class Util {
             @Override
             public void onResponse(JSONObject response) {
                 Log.v(TAG, "received data: " + response.toString());
+                // Put face into array
+                try {
+                    int id = (int)params.get("id");
+                    faces.put(""+id, (JSONObject)response.get("match"));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
 
         }, new Response.ErrorListener() {
@@ -63,4 +71,7 @@ public class Util {
         byte[] b = baos.toByteArray();
         return Base64.encodeToString(b, Base64.DEFAULT);
     }
+
+    public static HashMap<String,JSONObject> faces = new HashMap<String, JSONObject>();
+
 }

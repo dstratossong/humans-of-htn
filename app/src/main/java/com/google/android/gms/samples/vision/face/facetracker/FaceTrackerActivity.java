@@ -22,6 +22,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.graphics.PointF;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -33,6 +34,7 @@ import android.view.View;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 import com.google.android.Util;
+import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.vision.CameraSource;
@@ -42,11 +44,10 @@ import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
 import com.google.android.gms.samples.vision.face.facetracker.ui.camera.CameraSourcePreview;
 import com.google.android.gms.samples.vision.face.facetracker.ui.camera.GraphicOverlay;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * Activity for the face tracker app.  This app detects faces with the rear facing camera, and draws
@@ -70,6 +71,11 @@ public final class FaceTrackerActivity extends AppCompatActivity {
     // Activity Methods
     //==============================================================================================
 
+    static{
+        System.loadLibrary("face");
+        System.loadLibrary("opencv_java");
+    }
+
     /**
      * Initializes the UI and initiates the creation of a face detector.
      */
@@ -91,7 +97,16 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         }
 
         queue = Volley.newRequestQueue(this);
+
+        TextView tv = (TextView) findViewById(R.id.testTextView);
+        tv.setText(NativeClass.getStringFromNative());
+//        NativeClass mNative = new NativeClass();
+//        mNative.
+
+//        Log.e("GAH", "0" + returnTwo(2));
     }
+
+//    public native int returnTwo(int t);
 
     /**
      * Handles the requesting of the camera permission.  This includes
@@ -298,10 +313,18 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         private boolean metaFetched;
 
         GraphicFaceTracker(GraphicOverlay overlay, CameraSource pcs) {
+
             mOverlay     = overlay;
-            mFaceGraphic = null;
+//            mFaceGraphic = null;
             metaFetched  = false;
             mcs          = pcs;
+
+            mFaceGraphic = new FaceGraphic(overlay, null, getApplicationContext());
+//            mLabelGraphic = new LabelGraphic(overlay);
+        }
+
+        float distance(PointF a, PointF b) {
+            return (a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y);
         }
 
         /**
@@ -312,6 +335,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             mcs.takePicture(null, new CameraSource.PictureCallback() {
                 @Override
                 public void onPictureTaken(byte[] data) {
+                    int localfaceId = 0;
                     JSONObject params = new JSONObject();
                     try {
                         params.put("file", Base64.encodeToString(data, Base64.DEFAULT));
@@ -324,8 +348,24 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                     }
 
                     Util.fetchMeta(queue, params);
-                    mFaceGraphic = new FaceGraphic(mOverlay, null);
-                    mFaceGraphic.setId(faceId);
+                    mFaceGraphic = new FaceGraphic(mOverlay, null, getApplicationContext());
+                    for (HashMap.Entry<String, JSONObject> entry : Util.faces.entrySet()) {
+                        System.out.println(entry.getKey() + "/" + entry.getValue());
+                        try {
+                            if (entry.getValue().getBoolean("deleted")) {
+                                if (distance((PointF) entry.getValue().get("position"), item.getPosition()) < 150) {
+                                    localfaceId = Integer.parseInt(entry.getKey());
+                                    JSONObject past = entry.getValue();
+                                    past.put("deleted", false);
+                                    entry.setValue(past);
+                                    break;
+                                }
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    mFaceGraphic.setId(localfaceId);
                     metaFetched = true;
                 }
             });
@@ -351,6 +391,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         public void onMissing(FaceDetector.Detections<Face> detectionResults) {
             if (mFaceGraphic != null && metaFetched) {
                 mOverlay.remove(mFaceGraphic);
+                mFaceGraphic.tidy();
             }
         }
 
@@ -362,7 +403,9 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         public void onDone() {
             if (mFaceGraphic != null && metaFetched) {
                 mOverlay.remove(mFaceGraphic);
+                mFaceGraphic.tidy();
             }
         }
     }
+
 }
