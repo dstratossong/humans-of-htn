@@ -32,6 +32,7 @@ import android.view.View;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 import com.google.android.Util;
+import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.vision.CameraSource;
@@ -41,10 +42,8 @@ import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
 import com.google.android.gms.samples.vision.face.facetracker.ui.camera.CameraSourcePreview;
 import com.google.android.gms.samples.vision.face.facetracker.ui.camera.GraphicOverlay;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.IOException;
 
 /**
@@ -69,6 +68,11 @@ public final class FaceTrackerActivity extends AppCompatActivity {
     // Activity Methods
     //==============================================================================================
 
+    static{
+        System.loadLibrary("face");
+        System.loadLibrary("opencv_java");
+    }
+
     /**
      * Initializes the UI and initiates the creation of a face detector.
      */
@@ -90,7 +94,16 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         }
 
         queue = Volley.newRequestQueue(this);
+
+        TextView tv = (TextView) findViewById(R.id.testTextView);
+        tv.setText(NativeClass.getStringFromNative());
+//        NativeClass mNative = new NativeClass();
+//        mNative.
+
+//        Log.e("GAH", "0" + returnTwo(2));
     }
+
+//    public native int returnTwo(int t);
 
     /**
      * Handles the requesting of the camera permission.  This includes
@@ -290,10 +303,14 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         private FaceGraphic mFaceGraphic;
         private boolean metaFetched;
 
+        //        private LabelGraphic mLabelGraphic;
         GraphicFaceTracker(GraphicOverlay overlay) {
             mOverlay     = overlay;
-            mFaceGraphic = null;
+//            mFaceGraphic = null;
             metaFetched  = false;
+
+            mFaceGraphic = new FaceGraphic(overlay, null, getApplicationContext());
+//            mLabelGraphic = new LabelGraphic(overlay);
         }
 
         /**
@@ -312,7 +329,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             }
 
             Util.fetchMeta(queue, params);
-            mFaceGraphic = new FaceGraphic(mOverlay, null);
+            mFaceGraphic = new FaceGraphic(mOverlay, null, getApplicationContext());
             mFaceGraphic.setId(faceId);
             metaFetched = true;
         }
@@ -328,6 +345,9 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         public void onUpdate(FaceDetector.Detections<Face> detectionResults, Face face) {
             mOverlay.add(mFaceGraphic);
             mFaceGraphic.updateFace(face);
+//            mOverlay.add(mLabelGraphic);
+            mFaceGraphic.updateFace(face);
+//            mLabelGraphic.updateFace(face);
         }
 
         /**
@@ -349,4 +369,5 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             mOverlay.remove(mFaceGraphic);
         }
     }
+
 }

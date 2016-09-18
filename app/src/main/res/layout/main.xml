@@ -18,6 +18,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+      <TextView
+          android:id="@+id/testTextView"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:text="Hello Text View" />
+
   </com.google.android.gms.samples.vision.face.facetracker.ui.camera.CameraSourcePreview>
 
 </LinearLayout>

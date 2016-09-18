@@ -15,9 +15,19 @@
  */
 package com.google.android.gms.samples.vision.face.facetracker;
 
+import android.content.Context;
+
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.content.Context;
+import android.content.res.AssetManager;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PointF;
+import android.graphics.RectF;
+import android.graphics.Typeface;
 
 import com.google.android.gms.samples.vision.face.facetracker.ui.camera.GraphicOverlay;
 import com.google.android.gms.vision.face.Face;
@@ -36,13 +46,11 @@ class FaceGraphic extends GraphicOverlay.Graphic {
     private static final float BOX_STROKE_WIDTH = 5.0f;
 
     private static final int COLOR_CHOICES[] = {
-        Color.BLUE,
-        Color.CYAN,
-        Color.GREEN,
-        Color.MAGENTA,
-        Color.RED,
-        Color.WHITE,
-        Color.YELLOW
+            Color.argb(255, 10, 46, 114),
+            Color.argb(255, 75, 60, 147),
+            Color.argb(255, 42, 157, 143),
+            Color.argb(255, 27, 196, 176),
+            Color.argb(255, 247, 245, 251)
     };
     private static int mCurrentColorIndex = 0;
 
@@ -55,13 +63,18 @@ class FaceGraphic extends GraphicOverlay.Graphic {
     private int mFaceId;
     private float mFaceHappiness;
 
-    FaceGraphic(GraphicOverlay overlay, JSONObject metaHash) {
+    private Context mContext;
+    private HeadPhysics physics = new HeadPhysics();
+
+    FaceGraphic(GraphicOverlay overlay, JSONObject metaHash, Context context) {
         super(overlay);
 
         mCurrentColorIndex = (mCurrentColorIndex + 1) % COLOR_CHOICES.length;
         final int selectedColor = COLOR_CHOICES[mCurrentColorIndex];
 
+        Typeface plain = Typeface.createFromAsset(mContext.getAssets(), "Roboto-Regular.ttf");
         mFacePositionPaint = new Paint();
+        mFacePositionPaint.setTypeface(plain);
         mFacePositionPaint.setColor(selectedColor);
 
         mIdPaint = new Paint();
@@ -96,26 +109,50 @@ class FaceGraphic extends GraphicOverlay.Graphic {
     @Override
     public void draw(Canvas canvas) {
         Face face = mFace;
+
+        PointF north;
+        if (face != null) {
+            north = physics.updatePhysics(face);
+        } else if (physics.isStarted) {
+            north = physics.getNorth();
+        } else {
+            return;
+        }
+
+        float topX = translateX(north.x);
+        float topY = translateY(north.y);
+
+        canvas.drawText("Jacob Barnett", topX, topY, mIdPaint);
+
         if (face == null) {
             return;
         }
 
-        // Draws a circle at the position of the detected face, with the face's track id below.
+
+        //==============================================================================================
+        // FACE
+        //==============================================================================================
+
         float x = translateX(face.getPosition().x + face.getWidth() / 2);
         float y = translateY(face.getPosition().y + face.getHeight() / 2);
-//        canvas.drawCircle(x, y, FACE_POSITION_RADIUS, mFacePositionPaint);
-//        canvas.drawText("id: " + mFaceId, x + ID_X_OFFSET, y + ID_Y_OFFSET, mIdPaint);
-//        canvas.drawText("happiness: " + String.format("%.2f", face.getIsSmilingProbability()), x - ID_X_OFFSET, y - ID_Y_OFFSET, mIdPaint);
-//        canvas.drawText("right eye: " + String.format("%.2f", face.getIsRightEyeOpenProbability()), x + ID_X_OFFSET * 2, y + ID_Y_OFFSET * 2, mIdPaint);
-//        canvas.drawText("left eye: " + String.format("%.2f", face.getIsLeftEyeOpenProbability()), x - ID_X_OFFSET*2, y - ID_Y_OFFSET*2, mIdPaint);
 
-        // Draws a bounding box around the face.
         float xOffset = scaleX(face.getWidth() / 2.0f);
         float yOffset = scaleY(face.getHeight() / 2.0f);
+
         float left = x - xOffset;
         float top = y - yOffset;
         float right = x + xOffset;
         float bottom = y + yOffset;
+
+        // Draws a circle at the position of the detected face, with the face's track id below.
+
+        canvas.drawCircle(x, y, FACE_POSITION_RADIUS, mFacePositionPaint);
+        canvas.drawText("id: " + mFaceId, x + ID_X_OFFSET, y + ID_Y_OFFSET, mIdPaint);
+//        canvas.drawText("happiness: " + String.format("%.2f", face.getIsSmilingProbability()), x - ID_X_OFFSET, y - ID_Y_OFFSET, mIdPaint);
+//        canvas.drawText("right eye: " + String.format("%.2f", face.getIsRightEyeOpenProbability()), x + ID_X_OFFSET * 2, y + ID_Y_OFFSET * 2, mIdPaint);
+//        canvas.drawText("left eye: " + String.format("%.2f", face.getIsLeftEyeOpenProbability()), x - ID_X_OFFSET * 2, y - ID_Y_OFFSET * 2, mIdPaint);
+
+        // Draws a bounding box around the face.
         canvas.drawRect(left, top, right, bottom, mBoxPaint);
     }
 }
