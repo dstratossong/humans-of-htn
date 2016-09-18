@@ -34,7 +34,7 @@ import android.view.View;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 import com.google.android.Util;
-import android.widget.TextView;
+//import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.vision.CameraSource;
@@ -98,8 +98,8 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
         queue = Volley.newRequestQueue(this);
 
-        TextView tv = (TextView) findViewById(R.id.testTextView);
-        tv.setText(NativeClass.getStringFromNative());
+//        TextView tv = (TextView) findViewById(R.id.testTextView);
+//        tv.setText(NativeClass.getStringFromNative());
 //        NativeClass mNative = new NativeClass();
 //        mNative.
 
