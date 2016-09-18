@@ -22,6 +22,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.graphics.PointF;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -45,6 +46,7 @@ import com.google.android.gms.samples.vision.face.facetracker.ui.camera.GraphicO
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * Activity for the face tracker app.  This app detects faces with the rear facing camera, and draws
@@ -313,6 +315,10 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 //            mLabelGraphic = new LabelGraphic(overlay);
         }
 
+        float distance(PointF a, PointF b) {
+            return (a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y);
+        }
+
         /**
          * Start tracking the detected face instance within the face overlay.
          */
@@ -324,12 +330,31 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
             try {
                 params.put("image", imgStr);
+                params.put("id", faceId);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
 
             Util.fetchMeta(queue, params);
+
             mFaceGraphic = new FaceGraphic(mOverlay, null, getApplicationContext());
+            for (HashMap.Entry<String, JSONObject> entry : Util.faces.entrySet())
+            {
+                System.out.println(entry.getKey() + "/" + entry.getValue());
+                try {
+                    if (entry.getValue().getBoolean("deleted")) {
+                            if (distance((PointF) entry.getValue().get("position"), item.getPosition()) < 150) {
+                                faceId = Integer.parseInt(entry.getKey());
+                                JSONObject past = entry.getValue();
+                                past.put("deleted", false);
+                                entry.setValue(past);
+                                break;
+                            }
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
             mFaceGraphic.setId(faceId);
             metaFetched = true;
         }
@@ -345,9 +370,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         public void onUpdate(FaceDetector.Detections<Face> detectionResults, Face face) {
             mOverlay.add(mFaceGraphic);
             mFaceGraphic.updateFace(face);
-//            mOverlay.add(mLabelGraphic);
-            mFaceGraphic.updateFace(face);
-//            mLabelGraphic.updateFace(face);
         }
 
         /**
@@ -358,6 +380,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         @Override
         public void onMissing(FaceDetector.Detections<Face> detectionResults) {
             mOverlay.remove(mFaceGraphic);
+            mFaceGraphic.tidy();
         }
 
         /**
@@ -367,6 +390,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         @Override
         public void onDone() {
             mOverlay.remove(mFaceGraphic);
+            mFaceGraphic.tidy();
         }
     }
 
