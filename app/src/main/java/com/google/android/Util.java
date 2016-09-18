@@ -31,6 +31,7 @@ public class Util {
 
             @Override
             public void onErrorResponse(VolleyError error) {
+                error.printStackTrace();
             }
         });
 
@@ -44,6 +45,4 @@ public class Util {
         byte[] b = baos.toByteArray();
         return Base64.encodeToString(b, Base64.DEFAULT);
     }
-
-
 }

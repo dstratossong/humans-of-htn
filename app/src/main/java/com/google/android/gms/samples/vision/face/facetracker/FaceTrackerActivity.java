@@ -134,10 +134,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         Context context = getApplicationContext();
         FaceDetector detector = new FaceDetector.Builder(context).build();
 
-        detector.setProcessor(
-                new MultiProcessor.Builder<>(new GraphicFaceTrackerFactory())
-                        .build());
-
         if (!detector.isOperational()) {
             // Note: The first time that an app using face API is installed on a device, GMS will
             // download a native library to the device in order to do detection.  Usually this
@@ -154,7 +150,11 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                 .setRequestedPreviewSize(640, 480)
                 .setFacing(CameraSource.CAMERA_FACING_BACK)
                 .setRequestedFps(15.0f)
+                .setAutoFocusEnabled(true)
                 .build();
+
+        detector.setProcessor(
+                new MultiProcessor.Builder<>(new GraphicFaceTrackerFactory(mCameraSource)).build());
     }
 
     /**
@@ -275,9 +275,14 @@ public final class FaceTrackerActivity extends AppCompatActivity {
      * uses this factory to create face trackers as needed -- one for each individual.
      */
     private class GraphicFaceTrackerFactory implements MultiProcessor.Factory<Face> {
+        CameraSource gftcs;
+        GraphicFaceTrackerFactory(CameraSource cs) {
+            gftcs = cs;
+        }
+
         @Override
         public Tracker<Face> create(Face face) {
-            return new GraphicFaceTracker(mGraphicOverlay);
+            return new GraphicFaceTracker(mGraphicOverlay, gftcs);
         }
     }
 
@@ -286,39 +291,39 @@ public final class FaceTrackerActivity extends AppCompatActivity {
      * associated face overlay.
      */
     private class GraphicFaceTracker extends Tracker<Face> {
+        private CameraSource   mcs;
         private GraphicOverlay mOverlay;
         private FaceGraphic mFaceGraphic;
         private boolean metaFetched;
 
-        GraphicFaceTracker(GraphicOverlay overlay) {
+        GraphicFaceTracker(GraphicOverlay overlay, CameraSource pcs) {
             mOverlay     = overlay;
             mFaceGraphic = null;
             metaFetched  = false;
+            mcs          = pcs;
         }
 
         /**
          * Start tracking the detected face instance within the face overlay.
          */
         @Override
-        public void onNewItem(int faceId, Face item) {
-            String imgPath = takePic();
-            String imgStr = Util.encodeImagetoString(imgPath);
-            JSONObject params = new JSONObject();
+        public void onNewItem(final int faceId, Face item) {
+            mcs.takePicture(null, new CameraSource.PictureCallback() {
+                @Override
+                public void onPictureTaken(byte[] data) {
+                    JSONObject params = new JSONObject();
+                    try {
+                        params.put("image", data);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
 
-            try {
-                params.put("image", imgStr);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            Util.fetchMeta(queue, params);
-            mFaceGraphic = new FaceGraphic(mOverlay, null);
-            mFaceGraphic.setId(faceId);
-            metaFetched = true;
-        }
-
-        private String takePic() {
-            return "/storage/emulated/0/Download/giphy.gif";
+                    Util.fetchMeta(queue, params);
+                    mFaceGraphic = new FaceGraphic(mOverlay, null);
+                    mFaceGraphic.setId(faceId);
+                    metaFetched = true;
+                }
+            });
         }
 
         /**
@@ -326,8 +331,10 @@ public final class FaceTrackerActivity extends AppCompatActivity {
          */
         @Override
         public void onUpdate(FaceDetector.Detections<Face> detectionResults, Face face) {
-            mOverlay.add(mFaceGraphic);
-            mFaceGraphic.updateFace(face);
+            if (mFaceGraphic != null && metaFetched) {
+                mOverlay.add(mFaceGraphic);
+                mFaceGraphic.updateFace(face);
+            }
         }
 
         /**
@@ -337,7 +344,9 @@ public final class FaceTrackerActivity extends AppCompatActivity {
          */
         @Override
         public void onMissing(FaceDetector.Detections<Face> detectionResults) {
-            mOverlay.remove(mFaceGraphic);
+            if (mFaceGraphic != null && metaFetched) {
+                mOverlay.remove(mFaceGraphic);
+            }
         }
 
         /**
@@ -346,7 +355,9 @@ public final class FaceTrackerActivity extends AppCompatActivity {
          */
         @Override
         public void onDone() {
-            mOverlay.remove(mFaceGraphic);
+            if (mFaceGraphic != null && metaFetched) {
+                mOverlay.remove(mFaceGraphic);
+            }
         }
     }
 }

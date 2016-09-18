@@ -179,7 +179,9 @@ public class GraphicOverlay extends View {
             }
 
             for (Graphic graphic : mGraphics) {
-                graphic.draw(canvas);
+                if (graphic != null) {
+                    graphic.draw(canvas);
+                }
             }
         }
     }
