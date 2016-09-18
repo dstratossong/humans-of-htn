@@ -3,28 +3,39 @@ package com.google.android;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
+import android.util.Log;
 
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 
 
 public class Util {
+    private static final String TAG = "FaceUtils";
 
-    private static final String URL = "http://ec2-52-25-232-222.us-west-2.compute.amazonaws.com:4009";
+    private static final String URL = "http://fabebeb6.ngrok.io/api/match_image";
 
     public static void fetchMeta(RequestQueue queue, JSONObject params) {
+        try {
+            Log.v(TAG, "sending data: (left, top, width, height): "
+                    + params.getString("left") + " " + params.getString("top") + " " + params.getString("width") + " " + params.getString("height"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
         JsonObjectRequest r = new JsonObjectRequest(Request.Method.POST, URL, params, new Response.Listener<JSONObject>() {
 
             @Override
             public void onResponse(JSONObject response) {
+                Log.v(TAG, "received data: " + response.toString());
             }
 
         }, new Response.ErrorListener() {
@@ -33,7 +44,14 @@ public class Util {
             public void onErrorResponse(VolleyError error) {
                 error.printStackTrace();
             }
-        });
+        }) {
+            @Override
+            public String getBodyContentType() {
+                return "application/json";
+            }
+        };
+
+        r.setRetryPolicy(new DefaultRetryPolicy(30000, 1, 1));
 
         queue.add(r);
     }

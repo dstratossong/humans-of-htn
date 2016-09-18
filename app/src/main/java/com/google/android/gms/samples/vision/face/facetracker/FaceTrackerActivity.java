@@ -26,6 +26,7 @@ import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 
@@ -307,13 +308,17 @@ public final class FaceTrackerActivity extends AppCompatActivity {
          * Start tracking the detected face instance within the face overlay.
          */
         @Override
-        public void onNewItem(final int faceId, Face item) {
+        public void onNewItem(final int faceId, final Face item) {
             mcs.takePicture(null, new CameraSource.PictureCallback() {
                 @Override
                 public void onPictureTaken(byte[] data) {
                     JSONObject params = new JSONObject();
                     try {
-                        params.put("image", data);
+                        params.put("file", Base64.encodeToString(data, Base64.DEFAULT));
+                        params.put("left", item.getPosition().x * 3024f / 640f);
+                        params.put("top", item.getPosition().y * 4032f / 480f);
+                        params.put("width", item.getWidth() * 3024f / 640f);
+                        params.put("height", item.getHeight() * 4032f / 480f);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
